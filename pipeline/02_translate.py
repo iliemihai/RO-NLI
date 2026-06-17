@@ -90,13 +90,15 @@ class Generator:
         ]
 
 
-def fetch_todo(con, dataset: str, model_tag: str, rescue: bool, limit: int | None):
+def fetch_todo(con, dataset: str, model_tag: str, rescue: bool,
+               limit: int | None, all_models: bool = False):
     where = "(? = 'all' OR s.dataset = ?)"
     if rescue:
         where += " AND s.status = 'rescue'"
-    # never redo work this model already produced
+    # nu retraduce ce a produs deja acest model
     where += " AND NOT EXISTS (SELECT 1 FROM translations t WHERE t.seg_id = s.id AND t.model = ?)"
-    if not rescue:
+    # fără --all-models: sare și segmentele care au orice traducere (alt model)
+    if not rescue and not all_models:
         where += " AND NOT EXISTS (SELECT 1 FROM translations t WHERE t.seg_id = s.id)"
     q = (
         f"SELECT s.id, s.text_en, s.n_words FROM segments s WHERE {where}"
@@ -114,12 +116,16 @@ def main():
     ap.add_argument("--batch", type=int, default=None, help="implicit: 24 (4b) / 8 (12b)")
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--rescue", action="store_true")
+    ap.add_argument("--all-models", action="store_true",
+                    help="traduce și segmente care au deja o traducere de alt model; "
+                         "candidații coexistă în DB, QE alege câștigătorul la export")
     args = ap.parse_args()
     batch_size = args.batch or (24 if args.model == "4b" else 8)
     model_tag = f"translategemma-{args.model}-q4"
 
     con = connect()
-    todo = fetch_todo(con, args.dataset, model_tag, args.rescue, args.limit)
+    todo = fetch_todo(con, args.dataset, model_tag, args.rescue, args.limit,
+                      all_models=args.all_models)
     if not todo:
         print("Nimic de tradus pentru selecția curentă.")
         return

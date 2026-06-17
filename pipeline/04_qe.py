@@ -29,6 +29,7 @@ def main():
     ap.add_argument("--cpu", action="store_true")
     ap.add_argument("--limit", type=int, default=None, help="doar primii N (smoke test)")
     ap.add_argument("--sample", type=int, default=None, help="N aleși aleator (calibrare prag)")
+    ap.add_argument("--only-model", default=None, help="scorează doar candidații unui model, ex: translategemma-4b-q4")
     args = ap.parse_args()
 
     con = connect()
@@ -38,6 +39,8 @@ def main():
             "SELECT t.id, s.text_en, t.text_ro, t.flags FROM translations t"
             " JOIN segments s ON s.id = t.seg_id"
             " WHERE t.qe IS NULL AND t.flags IS NOT NULL"
+            + (" AND t.model = ?" if args.only_model else ""),
+            (args.only_model,) if args.only_model else (),
         )
         if not hard_flagged(flags)
     ]
