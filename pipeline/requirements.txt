@@ -1,0 +1,4 @@
+mlx-lm>=0.29
+lingua-language-detector>=2.0
+unbabel-comet>=2.2
+tqdm

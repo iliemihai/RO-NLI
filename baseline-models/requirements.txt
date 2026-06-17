@@ -1,0 +1,2 @@
+pytorch-lightning
+info-nce-pytorch # for contrastive loss
